@@ -21,6 +21,7 @@ import { GenericSkeletonLoader } from 'components/ui/ShimmeringLoader'
 import { useIsFeatureEnabled } from 'hooks/misc/useIsFeatureEnabled'
 import { useProfile } from 'lib/profile'
 import type { NextPageWithLayout } from 'types'
+import { Suspense, lazy } from 'react'
 
 const User: NextPageWithLayout = () => {
   const newLayoutPreview = useNewLayout()
@@ -56,44 +57,75 @@ User.getLayout = (page) => (
 
 export default User
 
+// Skeleton loading component
+const PreferencesSkeleton = () => (
+  <article>
+    <Panel>
+      <div className="p-4">
+        <GenericSkeletonLoader />
+      </div>
+    </Panel>
+    <div className="mt-4">
+      <Panel>
+        <div className="p-4">
+          <GenericSkeletonLoader />
+        </div>
+      </Panel>
+    </div>
+    <div className="mt-4">
+      <Panel>
+        <div className="p-4">
+          <GenericSkeletonLoader />
+        </div>
+      </Panel>
+    </div>
+    <div className="mt-4">
+      <Panel>
+        <div className="p-4">
+          <GenericSkeletonLoader />
+        </div>
+      </Panel>
+    </div>
+  </article>
+)
+
 const ProfileCard = () => {
   const profileUpdateEnabled = useIsFeatureEnabled('profile:update')
   const { error, isLoading, isError, isSuccess } = useProfile()
 
+  if (isLoading) {
+    return <PreferencesSkeleton />
+  }
+
+  if (isError) {
+    return (
+      <Panel>
+        <div className="p-4">
+          <AlertError error={error} subject="Failed to retrieve account information" />
+        </div>
+      </Panel>
+    )
+  }
+
   return (
-    <article>
-      {isLoading && (
-        <Panel>
-          <div className="p-4">
-            <GenericSkeletonLoader />
-          </div>
-        </Panel>
-      )}
-      {isError && (
-        <Panel>
-          <div className="p-4">
-            <AlertError error={error} subject="Failed to retrieve account information" />
-          </div>
-        </Panel>
-      )}
-      {isSuccess && (
-        <>
-          {profileUpdateEnabled && isSuccess ? <ProfileInformation /> : null}
-          <AccountIdentities />
-        </>
-      )}
-
-      <section>
-        <ThemeSettings />
-      </section>
-
-      <section>
-        <AnalyticsSettings />
-      </section>
-
-      <section>
-        <AccountDeletion />
-      </section>
-    </article>
+    <Suspense fallback={<PreferencesSkeleton />}>
+      <article>
+        {profileUpdateEnabled && isSuccess && <ProfileInformation />}
+        
+        {isSuccess && <AccountIdentities />}
+        
+        <section className="mt-4">
+          <ThemeSettings />
+        </section>
+        
+        <section className="mt-4">
+          <AnalyticsSettings />
+        </section>
+        
+        <section className="mt-4">
+          <AccountDeletion />
+        </section>
+      </article>
+    </Suspense>
   )
 }
